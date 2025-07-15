@@ -322,6 +322,7 @@ class EngineArgs:
     max_num_seqs: Optional[int] = SchedulerConfig.max_num_seqs
     max_logprobs: int = ModelConfig.max_logprobs
     disable_log_stats: bool = False
+    stat_loggers: Optional[str] = None
     revision: Optional[str] = ModelConfig.revision
     code_revision: Optional[str] = ModelConfig.code_revision
     rope_scaling: dict[str, Any] = get_field(ModelConfig, "rope_scaling")
@@ -868,6 +869,12 @@ class EngineArgs:
         parser.add_argument('--disable-log-stats',
                             action='store_true',
                             help='Disable logging statistics.')
+        parser.add_argument(
+            "--stat-loggers",
+            type=str,
+            default=None,
+            help="Comma-separated list of custom StatLoggerBase class paths (e.g. mypkg.MyLogger1,mypkg.MyLogger2)"
+        )
 
         return parser
 

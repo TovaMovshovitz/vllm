@@ -105,6 +105,7 @@ from vllm.utils import (Device, FlexibleArgumentParser, get_open_zmq_ipc_path,
                         is_valid_ipv6_address, set_ulimit)
 from vllm.v1.metrics.prometheus import get_prometheus_registry
 from vllm.version import __version__ as VLLM_VERSION
+from vllm.v1.metrics.loggers import StatLoggerFactory
 
 prometheus_multiproc_dir: tempfile.TemporaryDirectory
 
@@ -161,6 +162,17 @@ async def build_async_engine_client(
         yield engine
 
 
+def build_stat_logger_factories(paths: Optional[str]) -> Optional[list[StatLoggerFactory]]:
+    def load_class(path: str):
+        mod, cls = path.rsplit(".", 1)
+        return getattr(importlib.import_module(mod), cls)
+
+    return [
+        lambda cfg, idx, cls=load_class(p.strip()): cls(cfg, idx)
+        for p in paths.split(",")
+    ] if paths else None
+
+
 @asynccontextmanager
 async def build_async_engine_client_from_engine_args(
     engine_args: AsyncEngineArgs,
@@ -194,6 +206,7 @@ async def build_async_engine_client_from_engine_args(
             async_llm = AsyncLLM.from_vllm_config(
                 vllm_config=vllm_config,
                 usage_context=usage_context,
+                stat_loggers=build_stat_logger_factories(engine_args.stat_loggers),
                 disable_log_requests=engine_args.disable_log_requests,
                 disable_log_stats=engine_args.disable_log_stats,
                 client_addresses=client_config,
